@@ -7,10 +7,10 @@
 
 import SwiftUI
 
-enum NoteFilter: String, CaseIterable {
-    case all
-    case active
-    case completed
+enum NoteFilter: String, CaseIterable, Codable {
+    case all = "All Notes"
+    case active = "Active Notes"
+    case completed = "Completed Notes"
 }
 
 struct MainView: View {
@@ -19,89 +19,140 @@ struct MainView: View {
         didSet {
             saveNotes()
             self.filterNotes()
+//            print("================")
+//            print("================")
+//            for index in 0..<allNotes.count {
+//                print("Task number: \(index)")
+//                print("Task Title: \(allNotes[index].title)")
+//                print("Task Description: \(allNotes[index].description)")
+//                print("Task Complete Status: \(allNotes[index].isCompleted)")
+//                print("================")
+//            }
+//            print("================")
         }
     }
     @State private var filteredNotes: [Note] = []
     @State private var shouldShowCreateView = false
     @State private var selectedNote: Note? = nil
     @State private var showEditView = false
+    @State private var isToggled = false
     @State private var currentFilter: NoteFilter = .all {
         didSet {
             filterNotes()
+            guard let data = try? JSONEncoder().encode(currentFilter) else { return }
+            UserDefaults.standard.set(data, forKey: "NotesCurrentFilterKey")
         }
     }
     
     var body: some View {
-        VStack {
-            HStack {
-                Text("NoteApp")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Spacer()
-                menu
-                Spacer()
-                Button {
-                    shouldShowCreateView = true
-                } label: {
-                    Text("+")
-                        .font(.system(size: 50))
-                        .fontDesign(.serif)
-                        .foregroundStyle(.white)
-                        .fontWeight(.bold)
-                        .frame(width: 55,height: 50)
-                        .background(Color.black)
-                        .cornerRadius(16)
+        ZStack {
+            Color.gray.opacity(0.3)
+                .ignoresSafeArea(.all)
+            VStack(spacing: 0) {
+                navbar
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 10)
+                List() {
+                    noteRows
                 }
+                .padding(.top, 10)
+                .padding(.horizontal, 16)
+                .listRowSpacing(20)
+                .listStyle(.plain)
+                .listRowSpacing(20)
             }
-            .padding(.horizontal)
-            List {
-                noteRows
+            .onAppear {
+                loadCachedData()
             }
-            Spacer()
-        }
-        .onAppear {
-            loadNotes()
-        }
-        .sheet(isPresented: $shouldShowCreateView) {
-            CreateNoteView(show: $shouldShowCreateView, completion: { note in
-                allNotes.append(note)
-            })
-        }
-        .sheet(isPresented: $showEditView) {
-            if let selectedNote = selectedNote {
-                EditNoteView(note: selectedNote) { updatedNote in
-                    if let index = allNotes.firstIndex(where: { $0.id == updatedNote.id }) {
-                        allNotes[index] = updatedNote
-                        saveNotes()
+            .sheet(isPresented: $shouldShowCreateView) {
+                CreateNoteView(show: $shouldShowCreateView, completion: { note in
+                    allNotes.append(note)
+                })
+            }
+            .sheet(isPresented: $showEditView) {
+                if let selectedNote = selectedNote {
+                    EditNoteView(note: selectedNote) { updatedNote in
+                        if let index = allNotes.firstIndex(where: { $0.id == updatedNote.id }) {
+                            allNotes[index] = updatedNote
+                            saveNotes()
+                        }
+                        showEditView = false
                     }
-                    showEditView = false
                 }
             }
         }
     }
     
+    private var addButton: some View {
+        Button {
+            shouldShowCreateView = true
+        } label: {
+            Image(systemName: "plus.square")
+                .resizable()
+                .scaledToFit()
+                .symbolRenderingMode(.monochrome)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.black)
+                .frame(width: 44, height: 44)
+        }
+    }
+    
+    private var navbar: some View {
+        HStack {
+            Text("NoteApp")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Spacer()
+            filterMenu
+            Spacer()
+            addButton
+        }
+    }
+    
     @ViewBuilder
-    private var menu: some View {
+    private var filterMenu: some View {
         Menu(currentFilter.rawValue, content: {
             ForEach(NoteFilter.allCases, id: \.self){ filter in
                 return createMenuRowView(filter)
             }
         })
         .tint(.black)
-        .font(.system(size: 20, weight: .semibold))
+        .font(.system(size: 18, weight: .semibold))
     }
     
     @ViewBuilder
     private var noteRows: some View {
         ForEach(filteredNotes, id: \.self) { note in
-            NoteRowView(note: note, onToggleCompleted: {
-                completeNote(note)
-                saveNotes()
-            })
-            .onTapGesture {
-                selectedNote = note
+            NavigationLink {
+                EditNoteView(note: note) { newNote in
+                    updateNote(newNote)
+                }
+            } label: {
+                NoteRowView(note: note, onToggleCompleted: {
+                    completeNote(note)
+                    saveNotes()
+                })
+            }
+            .buttonStyle(PlainButtonStyle())
+            .withoutSpecies()
+            .listRowBackground(Color.clear)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    deleteNote(note)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .background(
+                    Color.red
+                        .clipShape(Capsule())
+                )
             }
         }
+    }
+    
+    private func updateNote(_ newNote: Note) {
+        guard let index = allNotes.firstIndex(where: { $0.id == newNote.id }) else { return }
+        allNotes[index].update(newNote)
     }
     
     private func deleteNote(_ note: Note) {
@@ -125,7 +176,7 @@ struct MainView: View {
         guard let firstIndex = allNotes.firstIndex(where: { $0.id == note.id } ) else { return }
         print(firstIndex)
         var tempNote = allNotes[firstIndex]
-        tempNote.isCompleted.toggle()
+        tempNote.isCompleted = note.isCompleted
         allNotes[firstIndex] = tempNote
     }
     
@@ -142,32 +193,27 @@ struct MainView: View {
 }
 
 
-extension MainView {
+private extension MainView {
     func saveNotes() {
         if let encoded = try? JSONEncoder().encode(allNotes) {
-            UserDefaults.standard.set(encoded, forKey: "notes")
+            UserDefaults.standard.set(encoded, forKey: "SavedNotesKey")
         }
     }
     
+    func loadCachedData() {
+        loadNotes()
+        loadCurrentFilter()
+    }
+    
     func loadNotes() {
-        if let data = UserDefaults.standard.data(forKey: "notes"),
-           let savedNotes = try? JSONDecoder().decode([Note].self, from: data) {
-            self.allNotes = savedNotes
-        }
+        guard let data = UserDefaults.standard.data(forKey: "SavedNotesKey"),
+              let savedNotes = try? JSONDecoder().decode([Note].self, from: data) else { return }
+        self.allNotes = savedNotes
     }
-}
-
-struct ListWithoutSpecies: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .listRowSeparator(.hidden)
-            .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-    }
-}
-
-
-extension View {
-    func withoutSpecies() -> some View {
-        modifier(ListWithoutSpecies())
+    
+    func loadCurrentFilter() {
+        guard let data = UserDefaults.standard.data(forKey: "NotesCurrentFilterKey") else { return }
+        guard let filter = try? JSONDecoder().decode(NoteFilter.self, from: data) else { return }
+        currentFilter = filter
     }
 }

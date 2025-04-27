@@ -8,16 +8,16 @@
 import SwiftUI
 
 struct NoteRowView: View {
-    var note: Note
-    var onToggleCompleted: (() -> Void)
-    @State var isCompleted: Bool 
+    private var note: Note
+    private var onToggleCompleted: (() -> Void)
+    @State private var isCompleted: Bool
     
     init(note: Note, onToggleCompleted: @escaping () -> Void) {
         self.note = note
         self.onToggleCompleted = onToggleCompleted
         self.isCompleted = note.isCompleted
     }
-
+    
     private var formattedDate: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ru_RU")
@@ -39,39 +39,56 @@ struct NoteRowView: View {
     }
     
     var body: some View {
-            HStack() {
-                Text("\(note.title)")
-                    .font(.title)
-                    .padding(.leading)
-                    .fontWeight(.bold)
-                
+        ZStack {
+            Rectangle()
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+
+            VStack(spacing: 0) {
                 Spacer()
-                
-                Button {
-                    isCompleted.toggle()
-                    onToggleCompleted()
-                } label: {
-                    Image(systemName: "checkmark.circle")
-                        .padding(.trailing, 10)
+
+                HStack() {
+                    Text("\(note.title)")
+                        .font(.title)
+                        .padding(.leading, 8)
                         .fontWeight(.bold)
-                        .font(.largeTitle)
-                        .foregroundColor(isCompleted ? .green : .black)
+                    
+                    Spacer()
+                    
+                    Button {
+                        isCompleted.toggle()
+                        onToggleCompleted()
+                    } label: {
+                        Image(systemName: "checkmark.circle")
+                            .padding(.trailing, 8)
+                            .fontWeight(.bold)
+                            .font(.largeTitle)
+                            .foregroundColor(isCompleted ? .green : .black)
+                    }
+                    .background(
+                        Color.white
+                            .padding()
+                    )
                 }
+                .padding(.bottom, 5)
+                                            
+                HStack(alignment: .bottom) {
+                    Text("\(note.description)")
+                        .font(.callout)
+                        .padding(.leading, 8)
+                        .fontWeight(.bold)
+                    Spacer()
+                    Text(formattedDate)
+                        .font(.caption)
+                        .padding(.trailing, 8)
+                        .foregroundColor(.gray)
+                }
+                .padding(.bottom, 4)
+                
+                Color.gray
+                    .frame(height: 18)
             }
-        
-            Spacer()
-        
-            HStack {
-                Text("\(note.description)")
-                    .font(.callout)
-                    .padding(.leading)
-                    .fontWeight(.bold)
-                Spacer()
-                Text(formattedDate)
-                    .font(.caption)
-                    .padding(.trailing, 10)
-                    .foregroundColor(.gray)
-            }
-            Color.gray
         }
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+}

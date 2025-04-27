@@ -11,7 +11,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		E13BEE1D2DAC297B008376CD /* NoteApp */ = {
+		E1A3EA932DB58C8E008C56D4 /* NoteApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NoteApp;
 			sourceTree = "<group>";
@@ -32,7 +32,7 @@
 		E13BEE122DAC297B008376CD = {
 			isa = PBXGroup;
 			children = (
-				E13BEE1D2DAC297B008376CD /* NoteApp */,
+				E1A3EA932DB58C8E008C56D4 /* NoteApp */,
 				E13BEE1C2DAC297B008376CD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				E13BEE1D2DAC297B008376CD /* NoteApp */,
+				E1A3EA932DB58C8E008C56D4 /* NoteApp */,
 			);
 			name = NoteApp;
 			packageProductDependencies = (

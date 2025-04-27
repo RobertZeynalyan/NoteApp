@@ -7,9 +7,13 @@
 import SwiftUI
 
 struct EditNoteView: View {
-    
     @State var note: Note
     var onSave: (Note) -> Void
+    
+    init(note: Note, onSave: @escaping (Note) -> Void) {
+        self.note = note
+        self.onSave = onSave
+    }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -26,11 +30,11 @@ struct EditNoteView: View {
             Button("Save") {
                 onSave(note)
             }
-                .padding()
-                .background(Color.black)
-                .foregroundColor(.white)
-                .font(.largeTitle)
-                .cornerRadius(30)
+            .padding()
+            .background(Color.black)
+            .foregroundColor(.white)
+            .font(.largeTitle)
+            .cornerRadius(30)
         }
         .padding()
     }
